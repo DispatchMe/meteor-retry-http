@@ -1,4 +1,4 @@
-dispatch:retry-http
+dispatch:retry-http [![Build Status](https://travis-ci.org/DispatchMe/meteor-retry-http.svg?branch=master)](https://travis-ci.org/DispatchMe/meteor-retry-http)
 =======================
 
 A simple wrapper of http that supports retry options.
