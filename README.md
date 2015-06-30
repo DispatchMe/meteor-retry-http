@@ -10,8 +10,8 @@ RetryHttp.get('http://myurl', {
   retry: {
     baseTimeout: 100,
     maxTimeout: 5000,
-    shouldRetry: function (err, res) {
-      return true;
+    shouldRetry: function (err, res, callback) {
+      callback(null, true);
     },
     times: 5
   }
