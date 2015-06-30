@@ -43,9 +43,9 @@ Tinytest.addAsync('HttpRetry - only retries if shouldRetry is true', function (t
     retry: {
       baseTimeout: 1,
       maxTimeout: 10,
-      shouldRetry: function (error) {
+      shouldRetry: function (error, res, callback) {
         test.equal(error, 'error');
-        return false;
+        callback(null, false);
       }
     }
   };
