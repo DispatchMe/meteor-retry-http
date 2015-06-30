@@ -1,6 +1,6 @@
 Package.describe({
   name: 'dispatch:retry-http',
-  version: '0.0.1',
+  version: '0.1.0',
   summary: 'Wrap http with retry logic.',
   git: 'https://github.com/DispatchMe/meteor-retry-http.git'
 });
