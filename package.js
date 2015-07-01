@@ -9,8 +9,8 @@ Package.onUse(function (api) {
   api.versionsFrom('1.0');
 
   api.use([
-    'retry',
-    'http'
+    'http',
+    'retry'
   ]);
 
   api.addFiles('retry_http.js');

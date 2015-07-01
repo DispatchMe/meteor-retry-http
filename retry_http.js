@@ -16,6 +16,7 @@ RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
     baseTimeout: Match.Optional(Number),
     maxTimeout: Match.Optional(Number),
     times: Match.Optional(Number),
+    onError: Match.Optional(Function),
     shouldRetry: Match.Optional(Function)
   });
 
@@ -49,6 +50,11 @@ RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
     HTTP.call(type, url, options || {}, function (httpError, httpResponse) {
       // If there is an error check if we should retry
       if (httpError) {
+        // Call the onError hook
+        if (options.onError) {
+          options.onError(httpError, httpResponse);
+        }
+
         checkRetry(httpError, httpResponse, function (err, shouldRetry) {
           // If we should retry -- then retry
           if (shouldRetry) {
