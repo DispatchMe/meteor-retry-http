@@ -9,7 +9,7 @@ RetryHttp = {};
  * {Function} [options.shouldRetry(error, response, callback(tryRetry))] A function which will determine whether or not to retry based on the error.
  * {Number}   [options.times] The number of times to retry. Defaults to 5.
  */
-RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
+RetryHttp.call = Meteor.wrapAsync(function (type, url, options, retryHttpCallback) {
   options.retry = options.retry || {};
 
   check(options.retry, {
@@ -17,7 +17,8 @@ RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
     maxTimeout: Match.Optional(Number),
     times: Match.Optional(Number),
     onError: Match.Optional(Function),
-    shouldRetry: Match.Optional(Function)
+    shouldRetry: Match.Optional(Function),
+    shouldRetryTimeout: Match.Optional(Number)
   });
 
   var retryOpts = options.retry;
@@ -36,13 +37,29 @@ RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
     maxTimeout: retryOpts.maxTimeout || 5000
   });
 
-  var checkRetry = function (err, res, cb) {
-    // Retry if we are below the number of retry times
-    // and shouldRetry returns true
-    if (retries < (retryOpts.times || 5)) {
-      retryOpts.shouldRetry(err, res, cb);
+  var timedOut = false;
+
+  // Retry if we are below the number of retry times and
+  // if shouldRetry returns true before it times out.
+  var checkRetry = function (err, res, checkRetryCallback) {
+    // Ensure the should retry callback is only called once,
+    // in case it times out.
+    var checkRetryCallbackOnce = _.once(function () {
+      Meteor.clearTimeout(shouldRetryTimeoutId);
+      checkRetryCallback.apply(this, arguments);
+    });
+
+    // Timeout if should retry does not respond
+    // within a reasonable amount of time.
+    var shouldRetryTimeoutId = Meteor.setTimeout(function () {
+      timedOut = true;
+      checkRetryCallbackOnce('shouldRetry timed out', false);
+    }, retryOpts.shouldRetryTimeout || 30000);
+
+    if (!timedOut && retries < (retryOpts.times || 5)) {
+      retryOpts.shouldRetry(err, res, checkRetryCallbackOnce);
     } else {
-      cb(null, false);
+      checkRetryCallbackOnce(null, false);
     }
   };
 
@@ -57,18 +74,18 @@ RetryHttp.call = Meteor.wrapAsync(function (type, url, options, callback) {
 
         checkRetry(httpError, httpResponse, function (err, shouldRetry) {
           // If we should retry -- then retry
-          if (shouldRetry) {
+          if (!err && shouldRetry) {
             retry.retryLater(++retries, httpCall);
           }
           // otherwise pass along the error
           else {
-            callback(httpError, httpResponse);
+            retryHttpCallback(httpError, httpResponse);
           }
         });
       }
       // if there is not an error pass along the result
       else {
-        callback(null, httpResponse);
+        retryHttpCallback(null, httpResponse);
       }
     });
   }

@@ -37,9 +37,11 @@ Tinytest.addAsync('HttpRetry - retries correct number of times', function (test,
 });
 
 Tinytest.addAsync('HttpRetry - only retries if shouldRetry is true', function (test, complete) {
+  setResponse('error');
+
   numCalls = 0;
 
-  var retryOpts = {
+  RetryHttp.get('test_url', {
     retry: {
       baseTimeout: 1,
       maxTimeout: 10,
@@ -48,10 +50,33 @@ Tinytest.addAsync('HttpRetry - only retries if shouldRetry is true', function (t
         callback(null, false);
       }
     }
-  };
-
-  RetryHttp.get('test_url', retryOpts, function (error) {
+  }, function (error) {
     test.equal(error, 'error');
+    test.equal(numCalls, 1);
+    complete();
+  });
+});
+
+Tinytest.addAsync('HttpRetry - shouldRetry times out', function (test, complete) {
+  numCalls = 0;
+  setResponse('error');
+
+  // The test fails if this timeout is not
+  // cleared before shouldRetryTimeout.
+  var failTimeoutId = Meteor.setTimeout(function () {
+    test.fail();
+    complete();
+  }, 15);
+
+  RetryHttp.get('test_url', {
+    retry: {
+      shouldRetry: function (error, res, callback) {
+        // Do nothing to trigger timeout
+      },
+      shouldRetryTimeout: 10
+    }
+  }, function (error) {
+    Meteor.clearTimeout(failTimeoutId);
     test.equal(numCalls, 1);
     complete();
   });
