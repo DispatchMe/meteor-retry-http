@@ -1,6 +1,6 @@
 Package.describe({
   name: 'dispatch:retry-http',
-  version: '0.1.2',
+  version: '0.1.3',
   summary: 'Wrap http with retry logic.',
   git: 'https://github.com/DispatchMe/meteor-retry-http.git'
 });
@@ -10,7 +10,8 @@ Package.onUse(function (api) {
 
   api.use([
     'http',
-    'retry'
+    'retry',
+    'check'
   ]);
 
   api.addFiles('retry_http.js');
